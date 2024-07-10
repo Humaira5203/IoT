@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload or Capture Image</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height : 100vh;
+      margin: 0;
+    }
+    .hollow-box {
+      border: 2px solid #000;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .form-group {
+      margin-bottom : 15px;
+      display: flex;
+      align-items: center;
+    }
+    .form-group label {
+      padding: 10px 20px;
+      border: 2px solid #000;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right : 10px;
+    }
+    .form-group input[type="radio"] {
+      margin-right : 10px;
+    }
+    .form-group input[type="file"] {
+      display: none;
+    }
+    .form-group #imgInp + label {
+      background-color: navy;
+      color: white;
+    }
+    .form-group #imgInp + label:hover {
+      background-color: darkblue;
+    }
+    img {
+      margin-top : 20px;
+      max-width : 200px; /* Medium size */
+      height : auto;
+      display: none;
+    }
+    .upload-button {
+      margin-top : 10px;
+      padding: 10px 20px;
+      border: 2px solid #000;
+      border-radius: 5px;
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+    .upload-button:hover {
+      background-color: #0056b3;
+    }
+    #video-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+    video {
+      max-width : 200px;
+      height : auto;
+    }
+    .capture-button {
+      margin-top : 10px;
+      padding: 10px 20px;
+      border: 2px solid #000;
+      border-radius: 5px;
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+    .capture-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="hollow-box">
+    <div class="form-container">
+      <form id="image-form" action="/upload-image" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <input type="radio" id="upload-image" name="image-option" value="upload" checked>
+          <label for="upload-image">Upload Image</label>
+          <input type="radio" id="capture-image" name="image-option" value="capture">
+          <label for="capture-image">Capture Image</label>
+        </div>
+        <div class="form-group upload-group" style="flex-direction: column;">
+          <input accept="image/*" type="file" id="imgInp" name="file">
+          <label for="imgInp">Choose File</label>
+        </div>
+        <div id="video-container">
+          <video id="video" autoplay></video>
+          <button type="button" class="capture-button" id="capture">Capture</button>
+        </div>
+        <div id="file-chosen">No file chosen</div>
+        <img id="blah" src="#" alt="your image" />
+        <button type="submit" class="upload-button">Upload</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const imgInp = document.getElementById('imgInp');
+    const blah = document.getElementById('blah');
+    const fileChosen = document.getElementById('file-chosen');
+    const uploadImageRadio = document.getElementById('upload-image');
+    const captureImageRadio = document.getElementById('capture-image');
+    const videoContainer = document.getElementById('video-container');
+    const video = document.getElementById('video');
+    const captureButton = document.getElementById('capture');
+    
+    imgInp.onchange = function(evt) {
+      const [file] = imgInp.files;
+      if (file) {
+        blah.src = URL.createObjectURL(file);
+        blah.style.display = 'block';
+        fileChosen.textContent = file.name;
+      } else {
+        blah.style.display = 'none';
+        fileChosen.textContent = 'No file chosen';
+      }
+    };
+
+    uploadImageRadio.addEventListener('change', () => {
+      if (uploadImageRadio.checked) {
+        document.querySelector('.upload-group').style.display = 'flex';
+        videoContainer.style.display = 'none';
+      }
+    });
+
+    captureImageRadio.addEventListener('change', () => {
+      if (captureImageRadio.checked) {
+        document.querySelector('.upload-group').style.display = 'none';
+        videoContainer.style.display = 'flex';
+        startCamera();
+      }
+    });
+
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          console.error('Error accessing camera: ', err);
+        });
+    }
+
+    captureButton.addEventListener('click', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        const file = new File([blob], 'captured-image.png', { type: 'image/png' });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        imgInp.files = dataTransfer.files;
+        blah.src = URL.createObjectURL(file);
+        blah.style.display = 'block';
+        fileChosen.textContent = file.name;
+      });
+    });
+  </script>
+</body>
+</html>
